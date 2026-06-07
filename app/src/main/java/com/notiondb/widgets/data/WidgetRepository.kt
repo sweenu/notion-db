@@ -47,6 +47,32 @@ class WidgetRepository(
     suspend fun getRows(appWidgetId: Int): List<WidgetRow> =
         dao.getRows(appWidgetId).map { it.toRow() }
 
+    suspend fun getRow(appWidgetId: Int, pageId: String): WidgetRow? =
+        dao.getRow(appWidgetId, pageId)?.toRow()
+
+    // --- optimistic write-back helpers (Phase 2/3) --------------------------
+
+    /** Flip the cached checkbox immediately; returns the new value (or null). */
+    suspend fun optimisticToggleCheckbox(appWidgetId: Int, pageId: String): Boolean? {
+        val row = dao.getRow(appWidgetId, pageId) ?: return null
+        val next = !(row.checked ?: false)
+        dao.upsertRow(row.copy(checked = next, pendingWrite = true))
+        return next
+    }
+
+    suspend fun markPending(appWidgetId: Int, pageId: String, pending: Boolean) {
+        val row = dao.getRow(appWidgetId, pageId) ?: return
+        dao.upsertRow(row.copy(pendingWrite = pending))
+    }
+
+    suspend fun applyStatus(appWidgetId: Int, pageId: String, name: String?, color: String?) {
+        val row = dao.getRow(appWidgetId, pageId) ?: return
+        dao.upsertRow(row.copy(statusName = name, statusColor = color, pendingWrite = false))
+    }
+
+    suspend fun clearPending(appWidgetId: Int, pageId: String) =
+        markPending(appWidgetId, pageId, false)
+
     /**
      * Pulls the latest rows from Notion (through the saved view when one is
      * configured, otherwise the raw data source) and atomically swaps the cache.

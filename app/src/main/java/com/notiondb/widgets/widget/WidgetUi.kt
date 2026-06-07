@@ -4,39 +4,68 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
+import androidx.glance.action.actionParametersOf
+import androidx.glance.action.clickable
+import androidx.glance.appwidget.CheckBox
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
 import androidx.glance.layout.Box
 import androidx.glance.layout.size
-import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.notiondb.widgets.model.WidgetConfig
 import com.notiondb.widgets.model.WidgetRow
 import com.notiondb.widgets.model.WidgetTheme
 
 /**
- * Leading indicator for a row: a checkbox glyph when a checkbox property is
- * configured, otherwise a small colored dot for the Status. Phase 2 swaps the
- * glyph for an interactive Glance `CheckBox` wired to the write-back action.
+ * Leading indicator for a row:
+ *  - an interactive Glance [CheckBox] when a checkbox property is configured;
+ *  - a tappable colored dot (advance Status) when a status property is set;
+ *  - otherwise nothing.
+ *
+ * Both interactions go through [ToggleCheckboxAction] / [AdvanceStatusAction],
+ * which update optimistically and enqueue the write-back.
  */
 @Composable
 fun RowLeading(config: WidgetConfig, row: WidgetRow, theme: WidgetTheme) {
-    val fg = ColorProvider(Color(theme.textColor))
     when {
         config.checkboxProperty != null && row.checked != null ->
-            Text(text = if (row.checked) "☑" else "☐", style = TextStyle(color = fg))
+            CheckBox(
+                checked = row.checked,
+                onCheckedChange = actionRunCallback<ToggleCheckboxAction>(
+                    rowParams(config.appWidgetId, row.pageId, config.checkboxProperty),
+                ),
+                text = "",
+            )
 
         config.statusProperty != null ->
             Box(
                 modifier = GlanceModifier
-                    .size(10.dp)
-                    .cornerRadius(5.dp)
-                    .background(ColorProvider(NotionColors.toColor(row.statusColor))),
+                    .size(14.dp)
+                    .cornerRadius(7.dp)
+                    .background(ColorProvider(dotColor(row, theme)))
+                    .clickable(
+                        actionRunCallback<AdvanceStatusAction>(
+                            rowParams(config.appWidgetId, row.pageId, config.statusProperty),
+                        ),
+                    ),
             ) {}
 
         else -> Box(modifier = GlanceModifier.size(0.dp)) {}
     }
+}
+
+private fun rowParams(widgetId: Int, pageId: String, property: String) =
+    actionParametersOf(
+        WidgetActionKeys.WIDGET_ID to widgetId,
+        WidgetActionKeys.PAGE_ID to pageId,
+        WidgetActionKeys.PROPERTY to property,
+    )
+
+/** Dim the dot while a status write is in flight. */
+private fun dotColor(row: WidgetRow, theme: WidgetTheme): Color {
+    val base = NotionColors.toColor(row.statusColor)
+    return if (row.pendingWrite) base.copy(alpha = 0.4f) else base
 }
 
 /** Maps Notion's named property colors to ARGB. */
