@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -56,7 +57,11 @@ fun WidgetBuilderScreen(
     val nav = rememberNavController()
     val draft by vm.draft.collectAsStateWithLifecycle()
 
-    NavHost(navController = nav, startDestination = "database") {
+    NavHost(
+        navController = nav,
+        startDestination = "database",
+        modifier = Modifier.fillMaxSize().safeDrawingPadding(),
+    ) {
         composable("database") {
             DatabaseStep(
                 draft = draft,

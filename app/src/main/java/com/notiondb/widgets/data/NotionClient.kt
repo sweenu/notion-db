@@ -49,7 +49,11 @@ class NotionClient(
         request { token -> http.get("$BASE_URL/v1/users/me") { auth(token) } }
             .map { json.decodeFromString(NotionUser.serializer(), it) }
 
-    /** POST /v1/search restricted to databases. */
+    /**
+     * POST /v1/search restricted to data sources. On the data-source API
+     * (2025-09-03+) the search object filter is "data_source", not "database",
+     * and each result is the queryable data source itself.
+     */
     suspend fun searchDatabases(query: String = ""): NotionResult<List<NotionDatabase>> =
         request { token ->
             http.post("$BASE_URL/v1/search") {
@@ -57,12 +61,12 @@ class NotionClient(
                 jsonBody(buildJsonObject {
                     if (query.isNotBlank()) put("query", query)
                     putJsonObject("filter") {
-                        put("value", "database")
+                        put("value", "data_source")
                         put("property", "object")
                     }
                 })
             }
-        }.map { NotionJson.parseDatabases(it.asObject()) }
+        }.map { NotionJson.parseDataSources(it.asObject()) }
 
     /** GET /v1/data_sources/{id} — schema (property definitions). */
     suspend fun getSchema(dataSourceId: String): NotionResult<List<PropertySchema>> =

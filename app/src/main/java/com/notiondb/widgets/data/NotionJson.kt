@@ -23,18 +23,24 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 object NotionJson {
 
-    fun parseDatabases(response: JsonObject): List<NotionDatabase> =
+    /**
+     * Parses /v1/search results filtered to `data_source`. Each result is a
+     * data source (the queryable unit); we surface it as a [NotionDatabase] with
+     * a single data source, using the parent database id for view lookups.
+     */
+    fun parseDataSources(response: JsonObject): List<NotionDatabase> =
         response.array("results").mapNotNull { el ->
             val obj = el.jsonObject
-            val id = obj.string("id") ?: return@mapNotNull null
+            val dataSourceId = obj.string("id") ?: return@mapNotNull null
+            val name = obj.string("name")
+                ?: obj.array("title").plainText().ifBlank { null }
+                ?: "Untitled"
+            val parentDatabaseId =
+                obj["parent"]?.jsonObject?.string("database_id") ?: dataSourceId
             NotionDatabase(
-                id = id,
-                title = obj.array("title").plainText().ifBlank { "Untitled" },
-                dataSources = obj.array("data_sources").mapNotNull { ds ->
-                    val dso = ds.jsonObject
-                    val dsId = dso.string("id") ?: return@mapNotNull null
-                    NotionDataSource(dsId, dso.string("name") ?: "Data source")
-                },
+                id = parentDatabaseId,
+                title = name,
+                dataSources = listOf(NotionDataSource(dataSourceId, name)),
             )
         }
 
