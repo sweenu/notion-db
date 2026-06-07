@@ -28,13 +28,15 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 /**
- * Notion REST client, pinned to API version 2026-04-01 (Views API + smart
- * filters). Every request is funneled through a shared [RateLimiter] and maps
- * non-2xx responses to [NotionResult.Failure] with a retryable flag.
+ * Notion REST client, pinned to API version 2026-03-11 (the latest valid
+ * version; data sources are available from 2025-09-03 on). Every request is
+ * funneled through a shared [RateLimiter] and maps non-2xx responses to
+ * [NotionResult.Failure] with a retryable flag.
  *
- * Endpoint shapes follow the documented 2026-04-01 API. The view-related
- * endpoints (list/query views) are the newest and should be verified against a
- * live response; they're flagged with TODO where the exact shape is assumed.
+ * The view-related endpoints (list/query views) are not guaranteed to exist on
+ * this version and should be verified against a live response; they're flagged
+ * with TODO where the exact shape is assumed, and the builder always offers the
+ * "whole database" path as a fallback.
  */
 class NotionClient(
     private val auth: NotionAuthProvider,
@@ -70,7 +72,7 @@ class NotionClient(
     /**
      * GET /v1/views — the saved views for a database.
      * TODO(verify): confirm whether views are keyed by database_id or
-     * data_source_id on 2026-04-01, and the exact query-parameter name.
+     * data_source_id, and the exact query-parameter name, on this API version.
      */
     suspend fun listViews(databaseId: String): NotionResult<List<NotionView>> =
         request { token ->
@@ -101,8 +103,8 @@ class NotionClient(
         }.map { NotionJson.parsePages(it.asObject()) }
 
     /**
-     * Query a view using its *saved* filters and sorts — the headline 2026-04-01
-     * capability that lets a widget mirror an existing Notion view.
+     * Query a view using its *saved* filters and sorts — lets a widget mirror an
+     * existing Notion view, where the Views API is available.
      * TODO(verify): assumed POST /v1/views/{id}/query with cursor pagination.
      */
     suspend fun queryView(
@@ -193,7 +195,7 @@ class NotionClient(
     companion object {
         const val BASE_URL = "https://api.notion.com"
         const val NOTION_VERSION_HEADER = "Notion-Version"
-        const val NOTION_VERSION = "2026-04-01"
+        const val NOTION_VERSION = "2026-03-11"
 
         fun defaultHttpClient(): HttpClient = HttpClient(OkHttp) {
             install(ContentNegotiation) {

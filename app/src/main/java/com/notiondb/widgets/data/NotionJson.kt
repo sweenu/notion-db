@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonPrimitive
  * shifts — is concentrated here.
  *
  * NOTE: a few container shapes (search → data_sources, the Views API payloads)
- * are coded to the documented 2026-04-01 structures. They're defensive (missing
+ * are coded to the documented data-source / Views structures. They're defensive (missing
  * fields degrade gracefully) but should be sanity-checked against a live
  * response before relying on them in production.
  */

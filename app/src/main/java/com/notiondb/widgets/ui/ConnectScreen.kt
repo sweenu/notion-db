@@ -53,7 +53,7 @@ fun ConnectScreen(
             Text("— or paste a token —", style = MaterialTheme.typography.labelMedium)
         }
         Text(
-            "Create an internal integration at notion.so/my-integrations, share " +
+            "Create an internal integration at notion.com/my-integrations, share " +
                 "your databases with it, then paste its token below.",
             style = MaterialTheme.typography.bodyMedium,
         )

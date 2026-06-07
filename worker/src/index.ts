@@ -16,7 +16,7 @@ export interface Env {
 }
 
 const NOTION_TOKEN_URL = "https://api.notion.com/v1/oauth/token";
-const NOTION_VERSION = "2026-04-01";
+const NOTION_VERSION = "2026-03-11";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {

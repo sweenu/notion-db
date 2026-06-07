@@ -8,12 +8,12 @@ import kotlinx.serialization.Serializable
  * uses; the messy mapping from Notion's JSON lives in [NotionJson] so the wire
  * format (which shifts between API versions) is isolated in one place.
  *
- * API context (version 2026-04-01):
+ * API context (version 2026-03-11):
  *  - A *database* is a container that holds one or more *data sources*
  *    (the 2025-09-03 change). Rows are queried per data source, not per
  *    database: POST /v1/data_sources/{id}/query.
  *  - A *view* belongs to a database and carries saved filters/sorts that we can
- *    read and query through (the 2026-04-01 Views API).
+ *    read and query through, where the Views API is available.
  */
 
 @Serializable

@@ -10,7 +10,7 @@ import android.net.Uri
  * working unchanged.
  */
 object NotionOAuthConfig {
-    /** OAuth client id from notion.so/my-integrations. */
+    /** OAuth client id from notion.com/my-integrations. */
     const val CLIENT_ID = ""
 
     /** Deployed Worker base URL, e.g. https://notion-db-widgets-oauth.<acct>.workers.dev */

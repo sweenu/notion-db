@@ -8,7 +8,7 @@ Notion's OAuth token endpoint requires HTTP Basic auth with `client_id:client_se
 
 ## Setup
 
-1. Create a **public** integration at <https://www.notion.so/my-integrations> and note its OAuth **Client ID** and **Client secret**.
+1. Create a **public** integration at <https://www.notion.com/my-integrations> and note its OAuth **Client ID** and **Client secret**.
 2. Add the app's redirect URI to the integration: `notiondbwidgets://oauth`.
 3. Deploy the Worker:
    ```bash
