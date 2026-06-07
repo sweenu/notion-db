@@ -90,8 +90,13 @@ class WidgetRepository(
         return when (result) {
             is NotionResult.Success -> {
                 val rows = result.value.pages
+                    .map { page -> rowEntity(config, page, 0) }
+                    .let { built ->
+                        // Client-side filter layered on the view/data source.
+                        if (config.hideCheckedRows) built.filter { it.checked != true } else built
+                    }
                     .take(config.maxRows)
-                    .mapIndexed { index, page -> rowEntity(config, page, index) }
+                    .mapIndexed { index, row -> row.copy(position = index) }
                 dao.replaceRows(appWidgetId, rows)
                 NotionResult.Success(Unit)
             }

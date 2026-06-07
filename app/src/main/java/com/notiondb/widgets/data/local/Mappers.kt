@@ -35,6 +35,7 @@ object Mappers {
         themeJson = json.encodeToString(WidgetTheme.serializer(), theme),
         actionsJson = json.encodeToString(actionListSerializer, actions),
         maxRows = maxRows,
+        hideCheckedRows = hideCheckedRows,
     )
 
     fun WidgetConfigEntity.toModel() = WidgetConfig(
@@ -51,6 +52,7 @@ object Mappers {
         theme = decode(themeJson, WidgetTheme.serializer(), WidgetTheme()),
         actions = decode(actionsJson, actionListSerializer, emptyList()),
         maxRows = maxRows,
+        hideCheckedRows = hideCheckedRows,
     )
 
     // --- rows ---------------------------------------------------------------

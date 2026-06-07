@@ -111,35 +111,47 @@ private fun RowList(
     theme: WidgetTheme,
     fg: ColorProvider,
 ) {
-    val verticalPad = if (theme.density == WidgetTheme.Density.COMPACT) 4.dp else 8.dp
+    val verticalPad = if (theme.density == WidgetTheme.Density.COMPACT) 3.dp else 7.dp
     LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
         items(rows, itemId = { it.pageId.hashCode().toLong() }) { row ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .padding(vertical = verticalPad)
-                    .clickable(RowActions.openPage(config.appWidgetId, row)),
-            ) {
-                RowLeading(config, row, theme)
-                Spacer(GlanceModifier.width(8.dp))
-                Text(
-                    text = row.title,
-                    maxLines = 1,
-                    style = TextStyle(color = fg),
-                    modifier = GlanceModifier.defaultWeight(),
-                )
-                if (row.statusName != null) {
+            Column(modifier = GlanceModifier.fillMaxWidth().padding(vertical = verticalPad)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .clickable(RowActions.openPage(config.appWidgetId, row)),
+                ) {
+                    RowLeading(config, row, theme)
                     Spacer(GlanceModifier.width(8.dp))
                     Text(
-                        text = row.statusName,
+                        text = row.title,
                         maxLines = 1,
-                        style = TextStyle(color = ColorProvider(Color(theme.accentColor))),
+                        style = TextStyle(color = fg),
+                        modifier = GlanceModifier.defaultWeight(),
                     )
+                    if (row.statusName != null) {
+                        Spacer(GlanceModifier.width(8.dp))
+                        Text(
+                            text = row.statusName,
+                            maxLines = 1,
+                            style = TextStyle(color = ColorProvider(Color(theme.accentColor))),
+                        )
+                    }
+                    if (config.actions.any { it.isRowScoped }) {
+                        Spacer(GlanceModifier.width(8.dp))
+                        RowActionsBar(config, row, theme)
+                    }
                 }
-                if (config.actions.any { it.isRowScoped }) {
-                    Spacer(GlanceModifier.width(8.dp))
-                    RowActionsBar(config, row, theme)
+                val subtitle = row.fields
+                    .filter { it.value.isNotBlank() }
+                    .joinToString("   ·   ") { it.value }
+                if (subtitle.isNotBlank() && theme.density != WidgetTheme.Density.COMPACT) {
+                    Text(
+                        text = subtitle,
+                        maxLines = 1,
+                        style = TextStyle(color = ColorProvider(Color(theme.textColor).copy(alpha = 0.6f))),
+                        modifier = GlanceModifier.padding(start = 22.dp),
+                    )
                 }
             }
         }

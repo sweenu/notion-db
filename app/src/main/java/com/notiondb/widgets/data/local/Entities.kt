@@ -19,6 +19,7 @@ data class WidgetConfigEntity(
     val themeJson: String,
     val actionsJson: String,
     val maxRows: Int,
+    val hideCheckedRows: Boolean = false,
 )
 
 /**

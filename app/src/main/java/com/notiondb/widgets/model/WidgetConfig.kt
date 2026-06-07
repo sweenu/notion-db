@@ -22,6 +22,8 @@ data class WidgetConfig(
     val theme: WidgetTheme = WidgetTheme(),
     val actions: List<ButtonAction> = emptyList(),
     val maxRows: Int = 25,
+    /** Client-side filter layered on top of the view/data source (Phase 4). */
+    val hideCheckedRows: Boolean = false,
 ) {
     /** True when rows are sourced from a saved Notion view rather than the raw DS. */
     val usesView: Boolean get() = viewId != null

@@ -11,6 +11,7 @@ import com.notiondb.widgets.data.PropertyType
 import com.notiondb.widgets.data.WidgetRepository
 import com.notiondb.widgets.model.ButtonAction
 import com.notiondb.widgets.model.WidgetConfig
+import com.notiondb.widgets.model.WidgetTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,9 @@ data class BuilderDraft(
     val checkboxProperty: String? = null,
     val statusProperty: String? = null,
     val actions: List<ButtonAction> = emptyList(),
+    val theme: WidgetTheme = WidgetTheme(),
+    val maxRows: Int = 25,
+    val hideCheckedRows: Boolean = false,
     val loading: Boolean = false,
     val error: String? = null,
 )
@@ -101,6 +105,15 @@ class WidgetBuilderViewModel(
         it.copy(actions = it.actions.filterIndexed { i, _ -> i != index })
     }
 
+    // --- style / filters (Phase 4) ------------------------------------------
+
+    fun setBackgroundColor(argb: Long) = _draft.update { it.copy(theme = it.theme.copy(backgroundColor = argb)) }
+    fun setAccentColor(argb: Long) = _draft.update { it.copy(theme = it.theme.copy(accentColor = argb)) }
+    fun setTextColor(argb: Long) = _draft.update { it.copy(theme = it.theme.copy(textColor = argb)) }
+    fun setDensity(density: WidgetTheme.Density) = _draft.update { it.copy(theme = it.theme.copy(density = density)) }
+    fun setMaxRows(count: Int) = _draft.update { it.copy(maxRows = count.coerceIn(1, 100)) }
+    fun setHideChecked(hide: Boolean) = _draft.update { it.copy(hideCheckedRows = hide) }
+
     /** Builds, persists, and triggers a first refresh. Returns the config or null. */
     fun save(onSaved: (WidgetConfig) -> Unit) {
         val d = _draft.value
@@ -123,6 +136,9 @@ class WidgetBuilderViewModel(
             checkboxProperty = d.checkboxProperty,
             statusProperty = d.statusProperty,
             actions = d.actions,
+            theme = d.theme,
+            maxRows = d.maxRows,
+            hideCheckedRows = d.hideCheckedRows,
         )
         viewModelScope.launch {
             repository.saveConfig(config)
