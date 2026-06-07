@@ -9,6 +9,7 @@ import com.notiondb.widgets.data.NotionView
 import com.notiondb.widgets.data.PropertySchema
 import com.notiondb.widgets.data.PropertyType
 import com.notiondb.widgets.data.WidgetRepository
+import com.notiondb.widgets.model.ButtonAction
 import com.notiondb.widgets.model.WidgetConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +29,7 @@ data class BuilderDraft(
     val displayFields: Set<String> = emptySet(),
     val checkboxProperty: String? = null,
     val statusProperty: String? = null,
+    val actions: List<ButtonAction> = emptyList(),
     val loading: Boolean = false,
     val error: String? = null,
 )
@@ -91,6 +93,14 @@ class WidgetBuilderViewModel(
     fun setCheckboxProperty(name: String?) = _draft.update { it.copy(checkboxProperty = name) }
     fun setStatusProperty(name: String?) = _draft.update { it.copy(statusProperty = name) }
 
+    // --- actions (Phase 3) --------------------------------------------------
+
+    fun addAction(action: ButtonAction) = _draft.update { it.copy(actions = it.actions + action) }
+
+    fun removeAction(index: Int) = _draft.update {
+        it.copy(actions = it.actions.filterIndexed { i, _ -> i != index })
+    }
+
     /** Builds, persists, and triggers a first refresh. Returns the config or null. */
     fun save(onSaved: (WidgetConfig) -> Unit) {
         val d = _draft.value
@@ -112,6 +122,7 @@ class WidgetBuilderViewModel(
             displayFields = d.displayFields.toList(),
             checkboxProperty = d.checkboxProperty,
             statusProperty = d.statusProperty,
+            actions = d.actions,
         )
         viewModelScope.launch {
             repository.saveConfig(config)

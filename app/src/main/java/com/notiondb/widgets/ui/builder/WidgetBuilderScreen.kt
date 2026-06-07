@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +32,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.notiondb.widgets.data.PropertyType
+import com.notiondb.widgets.model.ButtonAction
 import com.notiondb.widgets.model.WidgetConfig
 
 /**
@@ -74,6 +76,14 @@ fun WidgetBuilderScreen(
                 onToggleField = vm::toggleField,
                 onCheckbox = vm::setCheckboxProperty,
                 onStatus = vm::setStatusProperty,
+                onNext = { nav.navigate("actions") },
+            )
+        }
+        composable("actions") {
+            ActionsStep(
+                draft = draft,
+                onAdd = vm::addAction,
+                onRemove = vm::removeAction,
                 onSave = { vm.save(onSaved) },
             )
         }
@@ -153,9 +163,9 @@ private fun FieldsStep(
     onToggleField: (String) -> Unit,
     onCheckbox: (String?) -> Unit,
     onStatus: (String?) -> Unit,
-    onSave: () -> Unit,
+    onNext: () -> Unit,
 ) {
-    StepScaffold(title = "Choose fields", draft = draft, action = "Save widget" to onSave) {
+    StepScaffold(title = "Choose fields", draft = draft, action = "Next: buttons" to onNext) {
         val checkboxProps = draft.schema.filter { it.type == PropertyType.CHECKBOX }
         val statusProps = draft.schema.filter { it.type == PropertyType.STATUS }
 
@@ -191,6 +201,76 @@ private fun FieldsStep(
             }
         }
     }
+}
+
+@Composable
+private fun ActionsStep(
+    draft: BuilderDraft,
+    onAdd: (ButtonAction) -> Unit,
+    onRemove: (Int) -> Unit,
+    onSave: () -> Unit,
+) {
+    var webhookUrl by remember { mutableStateOf("") }
+    StepScaffold(title = "Buttons (optional)", draft = draft, action = "Save widget" to onSave) {
+        Text(
+            "Notion's Button field can't be triggered through the API, so add app " +
+                "buttons that perform the same actions.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+
+        if (draft.actions.isNotEmpty()) {
+            Text("Added", style = MaterialTheme.typography.labelLarge)
+            draft.actions.forEachIndexed { index, action ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        "${action.label.ifBlank { "(button)" }}  ·  ${actionTypeName(action)}",
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    TextButton(onClick = { onRemove(index) }) { Text("Remove") }
+                }
+            }
+        }
+
+        Text("Add a button", style = MaterialTheme.typography.labelLarge)
+        Button(
+            onClick = { onAdd(ButtonAction.OpenPage("Open")) },
+            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        ) { Text("Open page") }
+        Button(
+            onClick = { onAdd(ButtonAction.AddRow(label = "+ Add")) },
+            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        ) { Text("Add row") }
+
+        OutlinedTextField(
+            value = webhookUrl,
+            onValueChange = { webhookUrl = it },
+            label = { Text("Webhook URL") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        )
+        Button(
+            enabled = webhookUrl.isNotBlank(),
+            onClick = {
+                onAdd(ButtonAction.Webhook(label = "Run", url = webhookUrl.trim()))
+                webhookUrl = ""
+            },
+            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        ) { Text("Add webhook button") }
+    }
+}
+
+private fun actionTypeName(action: ButtonAction): String = when (action) {
+    is ButtonAction.OpenPage -> "open page"
+    is ButtonAction.AddRow -> "add row"
+    is ButtonAction.Webhook -> "webhook"
+    is ButtonAction.ToggleCheckbox -> "toggle"
+    is ButtonAction.AdvanceStatus -> "advance status"
+    is ButtonAction.SetProperty -> "set property"
 }
 
 @Composable

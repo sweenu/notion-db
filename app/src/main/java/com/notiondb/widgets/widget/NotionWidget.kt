@@ -78,11 +78,11 @@ private fun WidgetRoot(
             !connected -> CenteredMessage("Open the app to connect Notion", fg)
             config == null -> CenteredMessage("Tap to configure this widget", fg)
             rows.isEmpty() -> {
-                Header(config, fg)
+                Header(config, theme, fg)
                 CenteredMessage("No rows yet — pull to refresh", fg)
             }
             else -> {
-                Header(config, fg)
+                Header(config, theme, fg)
                 Spacer(GlanceModifier.height(8.dp))
                 RowList(config, rows, theme, fg)
             }
@@ -91,13 +91,17 @@ private fun WidgetRoot(
 }
 
 @Composable
-private fun Header(config: WidgetConfig, fg: ColorProvider) {
+private fun Header(config: WidgetConfig, theme: WidgetTheme, fg: ColorProvider) {
     val label = config.viewName?.let { "${config.databaseTitle} · $it" } ?: config.databaseTitle
-    Text(
-        text = label,
-        style = TextStyle(color = fg, fontWeight = FontWeight.Bold),
-        maxLines = 1,
-    )
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            style = TextStyle(color = fg, fontWeight = FontWeight.Bold),
+            maxLines = 1,
+            modifier = GlanceModifier.defaultWeight(),
+        )
+        HeaderActions(config, theme)
+    }
 }
 
 @Composable
@@ -132,6 +136,10 @@ private fun RowList(
                         maxLines = 1,
                         style = TextStyle(color = ColorProvider(Color(theme.accentColor))),
                     )
+                }
+                if (config.actions.any { it.isRowScoped }) {
+                    Spacer(GlanceModifier.width(8.dp))
+                    RowActionsBar(config, row, theme)
                 }
             }
         }

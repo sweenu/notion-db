@@ -12,6 +12,21 @@ object WidgetActionKeys {
     val WIDGET_ID = ActionParameters.Key<Int>("widget_id")
     val PAGE_ID = ActionParameters.Key<String>("page_id")
     val PROPERTY = ActionParameters.Key<String>("property")
+    val ACTION_INDEX = ActionParameters.Key<Int>("action_index")
+}
+
+/**
+ * Runs an app-defined button action (Phase 3) by enqueueing [
+ * com.notiondb.widgets.work.ButtonActionWorker]. OpenPage is dispatched at
+ * render time and never routes here.
+ */
+class ButtonActionCallback : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val widgetId = parameters[WidgetActionKeys.WIDGET_ID] ?: return
+        val actionIndex = parameters[WidgetActionKeys.ACTION_INDEX] ?: return
+        val pageId = parameters[WidgetActionKeys.PAGE_ID]
+        WidgetWriteScheduler.enqueueButtonAction(context, widgetId, actionIndex, pageId)
+    }
 }
 
 /**

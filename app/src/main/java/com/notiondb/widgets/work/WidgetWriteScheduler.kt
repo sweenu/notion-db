@@ -46,6 +46,27 @@ object WidgetWriteScheduler {
         )
     }
 
+    /** Enqueue an app-defined button action (Phase 3). pageId is null for AddRow. */
+    fun enqueueButtonAction(context: Context, widgetId: Int, actionIndex: Int, pageId: String?) {
+        val pairs = buildList {
+            add(ButtonActionWorker.KEY_WIDGET_ID to widgetId)
+            add(ButtonActionWorker.KEY_ACTION_INDEX to actionIndex)
+            pageId?.let { add(ButtonActionWorker.KEY_PAGE_ID to it) }
+        }.toTypedArray()
+
+        val request = OneTimeWorkRequestBuilder<ButtonActionWorker>()
+            .setConstraints(constraints)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, Duration.ofSeconds(5))
+            .setInputData(workDataOf(*pairs))
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "button_${widgetId}_${pageId ?: "widget"}_$actionIndex",
+            ExistingWorkPolicy.REPLACE,
+            request,
+        )
+    }
+
     private fun enqueue(context: Context, widgetId: Int, pageId: String, op: String, data: Data) {
         val request = OneTimeWorkRequestBuilder<WriteBackWorker>()
             .setConstraints(constraints)
