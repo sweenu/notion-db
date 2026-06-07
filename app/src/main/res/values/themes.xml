@@ -1,0 +1,4 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Compose drives the in-app UI; this base theme only needs Material attributes. -->
+    <style name="Theme.NotionDbWidgets" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

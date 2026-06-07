@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Notion DB Widgets</string>
+    <string name="widget_description">Display a Notion database as a home-screen widget.</string>
+</resources>
