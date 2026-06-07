@@ -21,6 +21,19 @@
             </intent-filter>
         </activity>
 
+        <!-- OAuth redirect target (Phase 5): notiondbwidgets://oauth?code=... -->
+        <activity
+            android:name=".ui.OAuthRedirectActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="notiondbwidgets" android:host="oauth" />
+            </intent-filter>
+        </activity>
+
         <!-- Builder, launched when a widget is placed on the home screen -->
         <activity
             android:name=".ui.WidgetConfigActivity"

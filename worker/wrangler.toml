@@ -1,0 +1,11 @@
+name = "notion-db-widgets-oauth"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+# Secrets are NOT stored here. Set them with:
+#   npx wrangler secret put NOTION_CLIENT_ID
+#   npx wrangler secret put NOTION_CLIENT_SECRET
+#
+# Optional plain var to lock down CORS:
+# [vars]
+# ALLOWED_ORIGIN = "https://your-app-origin"

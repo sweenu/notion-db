@@ -1,6 +1,7 @@
 package com.notiondb.widgets.di
 
 import android.content.Context
+import com.notiondb.widgets.auth.OAuthManager
 import com.notiondb.widgets.auth.TokenAuthProvider
 import com.notiondb.widgets.auth.TokenStore
 import com.notiondb.widgets.data.NotionClient
@@ -15,8 +16,14 @@ import com.notiondb.widgets.data.local.AppDatabase
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
 
+    private val tokenStore by lazy { TokenStore(appContext) }
+
     val authProvider: TokenAuthProvider by lazy {
-        TokenAuthProvider(TokenStore(appContext))
+        TokenAuthProvider(tokenStore)
+    }
+
+    val oauthManager: OAuthManager by lazy {
+        OAuthManager(tokenStore)
     }
 
     val notionClient: NotionClient by lazy {

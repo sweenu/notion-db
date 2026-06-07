@@ -33,6 +33,7 @@ fun ConnectScreen(
     state: ConnectUiState,
     onConnect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onConnectWithNotion: (() -> Unit)? = null,
 ) {
     var token by rememberSaveable { mutableStateOf("") }
 
@@ -44,6 +45,13 @@ fun ConnectScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text("Connect Notion", style = MaterialTheme.typography.headlineSmall)
+
+        if (onConnectWithNotion != null) {
+            Button(onClick = onConnectWithNotion, modifier = Modifier.fillMaxWidth()) {
+                Text("Connect with Notion")
+            }
+            Text("— or paste a token —", style = MaterialTheme.typography.labelMedium)
+        }
         Text(
             "Create an internal integration at notion.so/my-integrations, share " +
                 "your databases with it, then paste its token below.",

@@ -90,8 +90,12 @@ Each phase is independently shippable.
 - **Phase 4 — Builder polish**
   Theming, widget sizes/density, extra filters layered on a view, more property
   renderers.
-- **Phase 5 — Distribution (optional)**
-  Add `OAuthAuthProvider` + Cloudflare Worker, onboarding, Play Store.
+- **Phase 5 — Distribution** ✅ *(OAuth implemented)*
+  Cloudflare Worker (`/worker`) performs the OAuth code→token exchange; the app
+  adds a "Connect with Notion" button + `notiondbwidgets://oauth` redirect
+  handler. Fill in `NotionOAuthConfig` (client id + Worker URL) to enable it;
+  until then the paste-token flow is the default. Play Store packaging is the
+  remaining productionization step.
 
 ## Module layout
 

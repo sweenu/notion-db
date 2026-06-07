@@ -1,5 +1,7 @@
 package com.notiondb.widgets.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -34,11 +36,20 @@ class MainActivity : ComponentActivity() {
                 )
                 val state by vm.state.collectAsState()
 
+                val onOAuth: (() -> Unit)? = if (container.oauthManager.isConfigured) {
+                    {
+                        startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse(container.oauthManager.authorizeUrl())),
+                        )
+                    }
+                } else null
+
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     ConnectScreen(
                         state = state,
                         onConnect = vm::connect,
                         modifier = Modifier.padding(innerPadding),
+                        onConnectWithNotion = onOAuth,
                     )
                 }
             }
