@@ -23,7 +23,10 @@ object RowActions {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
         } else {
-            actionStartActivity<MainActivity>()
+            // Reified Activity overload lives in androidx.glance.action; the Intent
+            // overload above is androidx.glance.appwidget.action. Fully-qualify to
+            // pick the right one without an import clash.
+            androidx.glance.action.actionStartActivity<MainActivity>()
         }
     }
 }

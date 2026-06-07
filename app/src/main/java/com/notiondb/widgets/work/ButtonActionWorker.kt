@@ -1,6 +1,7 @@
 package com.notiondb.widgets.work
 
 import android.content.Context
+import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.notiondb.widgets.App
