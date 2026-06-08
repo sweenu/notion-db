@@ -74,17 +74,33 @@ class NotionClient(
             .map { NotionJson.parseSchema(it.asObject()) }
 
     /**
-     * GET /v1/views — the saved views for a database.
-     * TODO(verify): confirm whether views are keyed by database_id or
-     * data_source_id, and the exact query-parameter name, on this API version.
+     * Lists a database's saved views. The list endpoint (GET /v1/views) returns
+     * only `{object, id}` per view, so we retrieve each view to get its name and
+     * type. Views that fail to load individually are skipped rather than failing
+     * the whole picker.
      */
-    suspend fun listViews(databaseId: String): NotionResult<List<NotionView>> =
-        request { token ->
-            http.get("$BASE_URL/v1/views") {
-                auth(token)
-                parameter("database_id", databaseId)
-            }
-        }.map { NotionJson.parseViews(it.asObject()) }
+    suspend fun listViews(databaseId: String): NotionResult<List<NotionView>> {
+        val ids = when (
+            val r = request { token ->
+                http.get("$BASE_URL/v1/views") {
+                    auth(token)
+                    parameter("database_id", databaseId)
+                }
+            }.map { NotionJson.parseViewIds(it.asObject()) }
+        ) {
+            is NotionResult.Success -> r.value
+            is NotionResult.Failure -> return r
+        }
+        val views = ids.mapNotNull { id ->
+            retrieveView(id).getOrNull()?.let { NotionView(it.id, it.name, it.type) }
+        }
+        return NotionResult.Success(views)
+    }
+
+    /** GET /v1/views/{id} — full view detail (name, type, data source, filter, sorts). */
+    suspend fun retrieveView(viewId: String): NotionResult<NotionViewDetail> =
+        request { token -> http.get("$BASE_URL/v1/views/$viewId") { auth(token) } }
+            .map { NotionJson.parseViewDetail(it.asObject()) }
 
     /** Query a data source's rows, optionally with explicit filter/sorts. */
     suspend fun queryDataSource(
@@ -107,24 +123,29 @@ class NotionClient(
         }.map { NotionJson.parsePages(it.asObject()) }
 
     /**
-     * Query a view using its *saved* filters and sorts — lets a widget mirror an
-     * existing Notion view, where the Views API is available.
-     * TODO(verify): assumed POST /v1/views/{id}/query with cursor pagination.
+     * Query a view's rows by mirroring its saved filter/sorts onto the data
+     * source. There is no view-query endpoint on this API version, so we read
+     * the view (data_source_id + filter + sorts) and run a normal data-source
+     * query. The saved filter is passed best-effort (its schema matches the
+     * query filter for the common cases).
      */
     suspend fun queryView(
         viewId: String,
         startCursor: String? = null,
         pageSize: Int = 50,
-    ): NotionResult<NotionJson.PageQueryResult> =
-        request { token ->
-            http.post("$BASE_URL/v1/views/$viewId/query") {
-                auth(token)
-                jsonBody(buildJsonObject {
-                    put("page_size", pageSize)
-                    startCursor?.let { put("start_cursor", it) }
-                })
-            }
-        }.map { NotionJson.parsePages(it.asObject()) }
+    ): NotionResult<NotionJson.PageQueryResult> {
+        val view = when (val r = retrieveView(viewId)) {
+            is NotionResult.Success -> r.value
+            is NotionResult.Failure -> return r
+        }
+        return queryDataSource(
+            dataSourceId = view.dataSourceId,
+            filter = view.filter,
+            sorts = view.sorts,
+            startCursor = startCursor,
+            pageSize = pageSize,
+        )
+    }
 
     /** PATCH a page's properties (write-back, Phase 2/3). */
     suspend fun updatePage(pageId: String, properties: JsonObject): NotionResult<Unit> =

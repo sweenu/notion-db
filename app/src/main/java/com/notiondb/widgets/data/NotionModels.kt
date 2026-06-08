@@ -56,6 +56,20 @@ data class NotionView(
     val type: String,
 )
 
+/**
+ * Full view detail from GET /v1/views/{id}. The list endpoint only returns ids,
+ * and there is no view-query endpoint, so we read a view's data source + saved
+ * filter/sorts here and run them against the data-source query endpoint.
+ */
+data class NotionViewDetail(
+    val id: String,
+    val name: String,
+    val type: String,
+    val dataSourceId: String,
+    val filter: kotlinx.serialization.json.JsonObject?,
+    val sorts: List<kotlinx.serialization.json.JsonObject>,
+)
+
 /** The schema of one property as declared on a data source. */
 data class PropertySchema(
     val id: String,

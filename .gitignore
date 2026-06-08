@@ -32,3 +32,12 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# devenv
+.devenv*
+devenv.local.nix
+.direnv
+.android/
+
+# local secret (do not commit)
+notion_token

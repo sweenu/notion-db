@@ -44,16 +44,19 @@ object NotionJson {
             )
         }
 
-    fun parseViews(response: JsonObject): List<NotionView> =
-        response.array("results").mapNotNull { el ->
-            val obj = el.jsonObject
-            val id = obj.string("id") ?: return@mapNotNull null
-            NotionView(
-                id = id,
-                name = obj.string("name") ?: "View",
-                type = obj.string("type") ?: "table",
-            )
-        }
+    /** The view-list endpoint returns only `{object, id}` per view. */
+    fun parseViewIds(response: JsonObject): List<String> =
+        response.array("results").mapNotNull { it.jsonObject.string("id") }
+
+    /** Full view detail (GET /v1/views/{id}): name, type, data source, filter, sorts. */
+    fun parseViewDetail(obj: JsonObject): NotionViewDetail = NotionViewDetail(
+        id = obj.string("id").orEmpty(),
+        name = obj.string("name") ?: "Untitled",
+        type = obj.string("type") ?: "table",
+        dataSourceId = obj.string("data_source_id").orEmpty(),
+        filter = obj["filter"] as? JsonObject,
+        sorts = obj.array("sorts").mapNotNull { it as? JsonObject },
+    )
 
     /** Reads a data source's `properties` map into ordered schema entries. */
     fun parseSchema(dataSource: JsonObject): List<PropertySchema> {
