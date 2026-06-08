@@ -1,6 +1,8 @@
 package com.notiondb.widgets.widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -11,6 +13,7 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
@@ -34,6 +37,7 @@ import com.notiondb.widgets.App
 import com.notiondb.widgets.model.WidgetConfig
 import com.notiondb.widgets.model.WidgetRow
 import com.notiondb.widgets.model.WidgetTheme
+import com.notiondb.widgets.ui.WidgetConfigActivity
 
 /**
  * The home-screen widget: a vertical list of Notion rows rendered entirely from
@@ -51,8 +55,15 @@ class NotionWidget : GlanceAppWidget() {
         val config = container.repository.getConfig(appWidgetId)
         val rows = if (config != null) container.repository.getRows(appWidgetId) else emptyList()
 
+        val configure = actionStartActivity(
+            Intent(context, WidgetConfigActivity::class.java)
+                .setAction(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+
         provideContent {
-            WidgetRoot(appWidgetId, connected, config, rows)
+            WidgetRoot(appWidgetId, connected, config, rows, configure)
         }
     }
 }
@@ -64,6 +75,7 @@ internal fun WidgetRoot(
     connected: Boolean,
     config: WidgetConfig?,
     rows: List<WidgetRow>,
+    configure: Action? = null,
 ) {
     val theme = config?.theme ?: WidgetTheme()
     val bg = ColorProvider(Color(theme.backgroundColor))
@@ -79,13 +91,13 @@ internal fun WidgetRoot(
     ) {
         when {
             !connected -> CenteredMessage("Open the app to connect Notion", fg)
-            config == null -> CenteredMessage("Tap to configure this widget", fg)
+            config == null -> CenteredMessage("Tap to configure this widget", fg, configure)
             rows.isEmpty() -> {
-                Header(config, theme, fg, refresh)
+                Header(config, theme, fg, refresh, configure)
                 CenteredMessage("Loading… tap to refresh", fg, refresh)
             }
             else -> {
-                Header(config, theme, fg, refresh)
+                Header(config, theme, fg, refresh, configure)
                 Spacer(GlanceModifier.height(8.dp))
                 RowList(config, rows, theme, fg)
             }
@@ -94,7 +106,13 @@ internal fun WidgetRoot(
 }
 
 @Composable
-private fun Header(config: WidgetConfig, theme: WidgetTheme, fg: ColorProvider, refresh: Action) {
+private fun Header(
+    config: WidgetConfig,
+    theme: WidgetTheme,
+    fg: ColorProvider,
+    refresh: Action,
+    configure: Action?,
+) {
     val label = config.viewName?.let { "${config.databaseTitle} · $it" } ?: config.databaseTitle
     Row(verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.fillMaxWidth()) {
         Text(
@@ -110,6 +128,13 @@ private fun Header(config: WidgetConfig, theme: WidgetTheme, fg: ColorProvider, 
             style = TextStyle(color = fg, fontWeight = FontWeight.Bold),
             modifier = GlanceModifier.clickable(refresh).padding(horizontal = 4.dp),
         )
+        if (configure != null) {
+            Text(
+                text = "⚙",
+                style = TextStyle(color = fg, fontWeight = FontWeight.Bold),
+                modifier = GlanceModifier.clickable(configure).padding(horizontal = 4.dp),
+            )
+        }
     }
 }
 
@@ -132,6 +157,10 @@ private fun RowList(
                 ) {
                     RowLeading(config, row, theme)
                     Spacer(GlanceModifier.width(8.dp))
+                    if (!row.icon.isNullOrBlank()) {
+                        Text(text = row.icon, maxLines = 1, style = TextStyle(color = fg))
+                        Spacer(GlanceModifier.width(6.dp))
+                    }
                     Text(
                         text = row.title,
                         maxLines = 1,

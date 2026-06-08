@@ -32,6 +32,9 @@ object Mappers {
         displayFieldsJson = json.encodeToString(stringListSerializer, displayFields),
         checkboxProperty = checkboxProperty,
         statusProperty = statusProperty,
+        statusAsCheckbox = statusAsCheckbox,
+        statusDoneOption = statusDoneOption,
+        statusNotDoneOption = statusNotDoneOption,
         themeJson = json.encodeToString(WidgetTheme.serializer(), theme),
         actionsJson = json.encodeToString(actionListSerializer, actions),
         maxRows = maxRows,
@@ -49,6 +52,9 @@ object Mappers {
         displayFields = decode(displayFieldsJson, stringListSerializer, emptyList()),
         checkboxProperty = checkboxProperty,
         statusProperty = statusProperty,
+        statusAsCheckbox = statusAsCheckbox,
+        statusDoneOption = statusDoneOption,
+        statusNotDoneOption = statusNotDoneOption,
         theme = decode(themeJson, WidgetTheme.serializer(), WidgetTheme()),
         actions = decode(actionsJson, actionListSerializer, emptyList()),
         maxRows = maxRows,
@@ -61,10 +67,15 @@ object Mappers {
     fun rowEntity(config: WidgetConfig, page: NotionPage, position: Int): CachedRowEntity {
         val title = (page.properties[config.titleProperty]?.displayText()).orEmpty()
             .ifBlank { "Untitled" }
-        val checked = config.checkboxProperty
-            ?.let { page.properties[it] as? PropertyValue.Checkbox }?.checked
         val status = config.statusProperty
             ?.let { page.properties[it] as? PropertyValue.Status }
+        // When the Status is shown as a checkbox, derive checked from the status;
+        // otherwise use the configured checkbox property.
+        val checked = if (config.statusIsCheckbox) {
+            status?.name == config.statusDoneOption
+        } else {
+            config.checkboxProperty?.let { page.properties[it] as? PropertyValue.Checkbox }?.checked
+        }
         val fields = config.displayFields.map { name ->
             RowField(name, page.properties[name]?.displayText().orEmpty())
         }
@@ -74,6 +85,7 @@ object Mappers {
             position = position,
             title = title,
             url = page.url,
+            icon = page.icon,
             checked = checked,
             statusName = status?.name,
             statusColor = status?.color,
@@ -86,6 +98,7 @@ object Mappers {
         pageId = pageId,
         title = title,
         url = url,
+        icon = icon,
         checked = checked,
         statusName = statusName,
         statusColor = statusColor,

@@ -62,6 +62,28 @@ class ToggleCheckboxAction : ActionCallback {
 }
 
 /**
+ * Toggles a Status rendered as a checkbox: flips checked, sets the status to the
+ * configured done / not-done option optimistically, then enqueues the PATCH.
+ */
+class ToggleStatusCheckboxAction : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val widgetId = parameters[WidgetActionKeys.WIDGET_ID] ?: return
+        val pageId = parameters[WidgetActionKeys.PAGE_ID] ?: return
+
+        val container = (context.applicationContext as App).container
+        val config = container.repository.getConfig(widgetId) ?: return
+        val property = config.statusProperty ?: return
+        val done = config.statusDoneOption ?: return
+        val notDone = config.statusNotDoneOption ?: done
+
+        val target = container.repository
+            .optimisticToggleStatusCheckbox(widgetId, pageId, done, notDone) ?: return
+        NotionWidget().update(context, glanceId)
+        WidgetWriteScheduler.enqueueStatusSet(context, widgetId, pageId, property, target)
+    }
+}
+
+/**
  * Advances a Status to its next option. We can't know the next option without
  * the schema, so we just mark the row pending here and let the worker fetch the
  * options, compute the next value, PATCH, and update the cache.

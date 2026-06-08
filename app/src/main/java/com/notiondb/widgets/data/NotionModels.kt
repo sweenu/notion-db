@@ -120,6 +120,8 @@ enum class PropertyType {
 data class NotionPage(
     val id: String,
     val url: String?,
+    /** Emoji icon if the page has one; null for image icons or no icon. */
+    val icon: String?,
     val properties: Map<String, PropertyValue>,
 )
 

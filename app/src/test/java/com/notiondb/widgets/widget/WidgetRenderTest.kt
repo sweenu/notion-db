@@ -32,8 +32,14 @@ class WidgetRenderTest {
     )
 
     private val rows = listOf(
-        WidgetRow("p1", "Morning prayer", null, null, "Not done", "red", emptyList()),
-        WidgetRow("p2", "Bible reading", null, null, "Done", "green", emptyList()),
+        WidgetRow(
+            pageId = "p1", title = "Morning prayer", url = null, icon = "🙏",
+            checked = null, statusName = "Not done", statusColor = "red", fields = emptyList(),
+        ),
+        WidgetRow(
+            pageId = "p2", title = "Bible reading", url = null, icon = null,
+            checked = null, statusName = "Done", statusColor = "green", fields = emptyList(),
+        ),
     )
 
     @Test

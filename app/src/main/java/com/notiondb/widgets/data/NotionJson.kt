@@ -109,6 +109,7 @@ object NotionJson {
             NotionPage(
                 id = id,
                 url = obj.string("url"),
+                icon = (obj["icon"] as? JsonObject)?.takeIf { it.string("type") == "emoji" }?.string("emoji"),
                 properties = props.entries.associate { (name, value) ->
                     name to parsePropertyValue(value.jsonObject)
                 },

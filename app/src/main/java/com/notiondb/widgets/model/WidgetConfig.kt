@@ -19,6 +19,15 @@ data class WidgetConfig(
     val displayFields: List<String> = emptyList(),
     val checkboxProperty: String? = null,
     val statusProperty: String? = null,
+    /**
+     * Render the Status property as a checkbox (like Notion can). Checked means
+     * the row's status equals [statusDoneOption]; toggling writes the done /
+     * not-done option. Resolved from the Status groups (Complete / To-do) when
+     * the user enables it in the builder.
+     */
+    val statusAsCheckbox: Boolean = false,
+    val statusDoneOption: String? = null,
+    val statusNotDoneOption: String? = null,
     val theme: WidgetTheme = WidgetTheme(),
     val actions: List<ButtonAction> = emptyList(),
     val maxRows: Int = 25,
@@ -27,6 +36,10 @@ data class WidgetConfig(
 ) {
     /** True when rows are sourced from a saved Notion view rather than the raw DS. */
     val usesView: Boolean get() = viewId != null
+
+    /** True when the Status field should render as an interactive checkbox. */
+    val statusIsCheckbox: Boolean
+        get() = statusAsCheckbox && statusProperty != null && statusDoneOption != null
 }
 
 /** Per-widget appearance (Phase 4). Colors are ARGB packed into a Long. */

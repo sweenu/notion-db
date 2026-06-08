@@ -59,6 +59,11 @@ class WriteBackWorker(
                 }
             }
 
+            OP_STATUS_SET -> {
+                val value = inputData.getString(KEY_VALUE) ?: return Result.success()
+                client.updatePage(pageId, PropertyPatch.status(property, value))
+            }
+
             else -> NotionResult.Success(Unit)
         }
 
@@ -92,8 +97,10 @@ class WriteBackWorker(
         const val KEY_OP = "op"
         const val KEY_PROPERTY = "property"
         const val KEY_BOOL = "bool"
+        const val KEY_VALUE = "value"
 
         const val OP_CHECKBOX = "checkbox"
         const val OP_STATUS = "status"
+        const val OP_STATUS_SET = "status_set"
     }
 }

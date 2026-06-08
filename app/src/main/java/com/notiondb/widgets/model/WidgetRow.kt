@@ -7,6 +7,7 @@ data class WidgetRow(
     val pageId: String,
     val title: String,
     val url: String?,
+    val icon: String?,
     val checked: Boolean?,
     val statusName: String?,
     val statusColor: String?,

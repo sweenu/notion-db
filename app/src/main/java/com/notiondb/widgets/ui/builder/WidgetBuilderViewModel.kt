@@ -8,6 +8,7 @@ import com.notiondb.widgets.data.NotionResult
 import com.notiondb.widgets.data.NotionView
 import com.notiondb.widgets.data.PropertySchema
 import com.notiondb.widgets.data.PropertyType
+import com.notiondb.widgets.data.StatusCheckbox
 import com.notiondb.widgets.data.WidgetRepository
 import com.notiondb.widgets.model.ButtonAction
 import com.notiondb.widgets.model.WidgetConfig
@@ -30,6 +31,7 @@ data class BuilderDraft(
     val displayFields: Set<String> = emptySet(),
     val checkboxProperty: String? = null,
     val statusProperty: String? = null,
+    val statusAsCheckbox: Boolean = false,
     val actions: List<ButtonAction> = emptyList(),
     val theme: WidgetTheme = WidgetTheme(),
     val maxRows: Int = 25,
@@ -95,7 +97,10 @@ class WidgetBuilderViewModel(
     }
 
     fun setCheckboxProperty(name: String?) = _draft.update { it.copy(checkboxProperty = name) }
-    fun setStatusProperty(name: String?) = _draft.update { it.copy(statusProperty = name) }
+    fun setStatusProperty(name: String?) = _draft.update {
+        it.copy(statusProperty = name, statusAsCheckbox = if (name == null) false else it.statusAsCheckbox)
+    }
+    fun setStatusAsCheckbox(enabled: Boolean) = _draft.update { it.copy(statusAsCheckbox = enabled) }
 
     // --- actions (Phase 3) --------------------------------------------------
 
@@ -124,6 +129,10 @@ class WidgetBuilderViewModel(
             fail("Choose a database and a title field before saving.")
             return
         }
+        val (doneOption, notDoneOption) =
+            if (d.statusAsCheckbox && d.statusProperty != null) resolveStatusCheckboxOptions(d)
+            else null to null
+
         val config = WidgetConfig(
             appWidgetId = appWidgetId,
             databaseId = db.id,
@@ -135,6 +144,9 @@ class WidgetBuilderViewModel(
             displayFields = d.displayFields.toList(),
             checkboxProperty = d.checkboxProperty,
             statusProperty = d.statusProperty,
+            statusAsCheckbox = d.statusAsCheckbox && doneOption != null,
+            statusDoneOption = doneOption,
+            statusNotDoneOption = notDoneOption,
             actions = d.actions,
             theme = d.theme,
             maxRows = d.maxRows,
@@ -144,6 +156,13 @@ class WidgetBuilderViewModel(
             repository.saveConfig(config)
             onSaved(config)
         }
+    }
+
+    private fun resolveStatusCheckboxOptions(d: BuilderDraft): Pair<String?, String?> {
+        val status = d.schema.firstOrNull {
+            it.name == d.statusProperty && it.type == PropertyType.STATUS
+        } ?: return null to null
+        return StatusCheckbox.resolveOptions(status)
     }
 
     private fun fail(message: String) = _draft.update { it.copy(loading = false, error = message) }

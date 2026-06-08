@@ -46,6 +46,20 @@ object WidgetWriteScheduler {
         )
     }
 
+    /** Set a Status property to a specific value (Status-as-checkbox toggle). */
+    fun enqueueStatusSet(context: Context, widgetId: Int, pageId: String, property: String, value: String) {
+        enqueue(
+            context, widgetId, pageId, WriteBackWorker.OP_STATUS_SET,
+            workDataOf(
+                WriteBackWorker.KEY_WIDGET_ID to widgetId,
+                WriteBackWorker.KEY_PAGE_ID to pageId,
+                WriteBackWorker.KEY_OP to WriteBackWorker.OP_STATUS_SET,
+                WriteBackWorker.KEY_PROPERTY to property,
+                WriteBackWorker.KEY_VALUE to value,
+            ),
+        )
+    }
+
     /** Enqueue an app-defined button action (Phase 3). pageId is null for AddRow. */
     fun enqueueButtonAction(context: Context, widgetId: Int, actionIndex: Int, pageId: String?) {
         val pairs = buildList {

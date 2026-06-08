@@ -95,6 +95,7 @@ fun WidgetBuilderScreen(
                 onToggleField = vm::toggleField,
                 onCheckbox = vm::setCheckboxProperty,
                 onStatus = vm::setStatusProperty,
+                onStatusAsCheckbox = vm::setStatusAsCheckbox,
                 onNext = { nav.navigate("actions") },
             )
         }
@@ -193,6 +194,7 @@ private fun FieldsStep(
     onToggleField: (String) -> Unit,
     onCheckbox: (String?) -> Unit,
     onStatus: (String?) -> Unit,
+    onStatusAsCheckbox: (Boolean) -> Unit,
     onNext: () -> Unit,
 ) {
     StepScaffold(title = "Choose fields", draft = draft, action = "Next: buttons" to onNext) {
@@ -228,6 +230,18 @@ private fun FieldsStep(
             SelectableRow("None", draft.statusProperty == null) { onStatus(null) }
             statusProps.forEach { p ->
                 SelectableRow(p.name, draft.statusProperty == p.name) { onStatus(p.name) }
+            }
+            if (draft.statusProperty != null) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Show Status as a checkbox", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Checked = Complete; tapping toggles the status.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    Switch(checked = draft.statusAsCheckbox, onCheckedChange = onStatusAsCheckbox)
+                }
             }
         }
     }

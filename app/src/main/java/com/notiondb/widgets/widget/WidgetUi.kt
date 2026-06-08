@@ -29,6 +29,16 @@ import com.notiondb.widgets.model.WidgetTheme
 @Composable
 fun RowLeading(config: WidgetConfig, row: WidgetRow, theme: WidgetTheme) {
     when {
+        // Status shown as a checkbox (the Notion-style toggle).
+        config.statusIsCheckbox && row.checked != null ->
+            CheckBox(
+                checked = row.checked,
+                onCheckedChange = actionRunCallback<ToggleStatusCheckboxAction>(
+                    rowParams(config.appWidgetId, row.pageId, config.statusProperty ?: ""),
+                ),
+                text = "",
+            )
+
         config.checkboxProperty != null && row.checked != null ->
             CheckBox(
                 checked = row.checked,

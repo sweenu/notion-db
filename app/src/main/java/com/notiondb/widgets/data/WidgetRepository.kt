@@ -60,6 +60,24 @@ class WidgetRepository(
         return next
     }
 
+    /**
+     * Toggle a Status-as-checkbox row: flip checked, set the status to the done
+     * or not-done option optimistically, and return the target status name to
+     * write back (or null if the row is gone).
+     */
+    suspend fun optimisticToggleStatusCheckbox(
+        appWidgetId: Int,
+        pageId: String,
+        doneOption: String,
+        notDoneOption: String,
+    ): String? {
+        val row = dao.getRow(appWidgetId, pageId) ?: return null
+        val nowChecked = !(row.checked ?: false)
+        val target = if (nowChecked) doneOption else notDoneOption
+        dao.upsertRow(row.copy(checked = nowChecked, statusName = target, pendingWrite = true))
+        return target
+    }
+
     suspend fun markPending(appWidgetId: Int, pageId: String, pending: Boolean) {
         val row = dao.getRow(appWidgetId, pageId) ?: return
         dao.upsertRow(row.copy(pendingWrite = pending))
