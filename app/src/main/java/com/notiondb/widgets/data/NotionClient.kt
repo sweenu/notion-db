@@ -123,45 +123,63 @@ class NotionClient(
         }.map { NotionJson.parsePages(it.asObject()) }
 
     /**
-     * Query a view's rows by mirroring its saved filter/sorts onto the data
-     * source. There is no view-query endpoint on this API version, so we read
-     * the view (data_source_id + filter + sorts) and run a normal data-source
-     * query. The saved filter is passed best-effort (its schema matches the
-     * query filter for the common cases).
+     * Query a view's rows the way Notion sees them. The view query lets Notion
+     * evaluate the view's *effective* filter (saved `filter` + `quick_filters`)
+     * and sorts server-side, so it's correct for any filter — including Status
+     * groups, relative dates, and compound and/or that don't translate to a
+     * data-source query filter. It returns only page ids, so we then fetch each
+     * matched page (capped at [pageSize], which for widgets is the row limit, so
+     * the cost is bounded by what's displayed, not the database size).
+     *
+     * Flow: POST /v1/views/{id}/queries (create) → paginate ids via
+     * GET …/queries/{query_id} → GET /v1/pages/{id} for each.
      */
     suspend fun queryView(
         viewId: String,
         startCursor: String? = null,
         pageSize: Int = 50,
     ): NotionResult<NotionJson.PageQueryResult> {
-        val view = when (val r = retrieveView(viewId)) {
-            is NotionResult.Success -> r.value
-            is NotionResult.Failure -> return r
+        val first = request { token ->
+            http.post("$BASE_URL/v1/views/$viewId/queries") { auth(token); jsonBody(buildJsonObject {}) }
+        }.map { NotionJson.parseViewQuery(it.asObject()) }
+        val firstPage = when (first) {
+            is NotionResult.Success -> first.value
+            is NotionResult.Failure -> return first
         }
 
-        val full = queryDataSource(
-            dataSourceId = view.dataSourceId,
-            filter = view.filter,
-            sorts = view.sorts,
-            startCursor = startCursor,
-            pageSize = pageSize,
-        )
-        // A view's saved sort can reference a property the query endpoint can't
-        // sort by (e.g. rollup/relation), which 400s. Rather than show an empty
-        // widget, retry without the sorts (keeping any filter). Genuine
-        // retryable failures (429/network) are returned as-is so the worker
-        // backs off instead of silently dropping the sort.
-        if (full is NotionResult.Success || (full is NotionResult.Failure && full.retryable)) {
-            return full
+        val ids = firstPage.ids.toMutableList()
+        var cursor = firstPage.nextCursor
+        val queryId = firstPage.queryId
+        while (ids.size < pageSize && queryId != null) {
+            val cur = cursor ?: break
+            val more = request { token ->
+                http.get("$BASE_URL/v1/views/$viewId/queries/$queryId") {
+                    auth(token)
+                    parameter("start_cursor", cur)
+                }
+            }.map { NotionJson.parseViewQuery(it.asObject()) }
+            when (more) {
+                is NotionResult.Success -> {
+                    ids += more.value.ids
+                    cursor = more.value.nextCursor
+                }
+                is NotionResult.Failure -> return more
+            }
         }
-        return queryDataSource(
-            dataSourceId = view.dataSourceId,
-            filter = view.filter,
-            sorts = emptyList(),
-            startCursor = startCursor,
-            pageSize = pageSize,
-        )
+
+        val pages = ids.take(pageSize).mapNotNull { retrievePage(it).getOrNull() }
+        return NotionResult.Success(NotionJson.PageQueryResult(pages, nextCursor = null))
     }
+
+    /** GET /v1/pages/{id} — a single page with its properties. */
+    suspend fun retrievePage(pageId: String): NotionResult<NotionPage> =
+        when (val res = request { token -> http.get("$BASE_URL/v1/pages/$pageId") { auth(token) } }) {
+            is NotionResult.Success ->
+                NotionJson.parsePage(res.value.asObject())
+                    ?.let { NotionResult.Success(it) }
+                    ?: NotionResult.Failure("Malformed page $pageId", retryable = false)
+            is NotionResult.Failure -> res
+        }
 
     /** PATCH a page's properties (write-back, Phase 2/3). */
     suspend fun updatePage(pageId: String, properties: JsonObject): NotionResult<Unit> =

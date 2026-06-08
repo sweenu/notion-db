@@ -101,24 +101,37 @@ object NotionJson {
 
     data class PageQueryResult(val pages: List<NotionPage>, val nextCursor: String?)
 
+    /** Parses a single page object (from a query result or GET /v1/pages/{id}). */
+    fun parsePage(obj: JsonObject): NotionPage? {
+        val id = obj.string("id") ?: return null
+        val props = obj["properties"]?.jsonObject ?: JsonObject(emptyMap())
+        return NotionPage(
+            id = id,
+            url = obj.string("url"),
+            icon = (obj["icon"] as? JsonObject)?.takeIf { it.string("type") == "emoji" }?.string("emoji"),
+            properties = props.entries.associate { (name, value) ->
+                name to parsePropertyValue(value.jsonObject)
+            },
+        )
+    }
+
     fun parsePages(response: JsonObject): PageQueryResult {
-        val pages = response.array("results").mapNotNull { el ->
-            val obj = el.jsonObject
-            val id = obj.string("id") ?: return@mapNotNull null
-            val props = obj["properties"]?.jsonObject ?: JsonObject(emptyMap())
-            NotionPage(
-                id = id,
-                url = obj.string("url"),
-                icon = (obj["icon"] as? JsonObject)?.takeIf { it.string("type") == "emoji" }?.string("emoji"),
-                properties = props.entries.associate { (name, value) ->
-                    name to parsePropertyValue(value.jsonObject)
-                },
-            )
-        }
+        val pages = response.array("results").mapNotNull { parsePage(it.jsonObject) }
         val cursor = if (response["has_more"]?.jsonPrimitive?.booleanOrNull == true) {
             response.string("next_cursor")
         } else null
         return PageQueryResult(pages, cursor)
+    }
+
+    /** One page of a view-query result: matched page ids + the query id + cursor. */
+    data class ViewQueryPage(val ids: List<String>, val queryId: String?, val nextCursor: String?)
+
+    fun parseViewQuery(response: JsonObject): ViewQueryPage {
+        val ids = response.array("results").mapNotNull { it.jsonObject.string("id") }
+        val cursor = if (response["has_more"]?.jsonPrimitive?.booleanOrNull == true) {
+            response.string("next_cursor")
+        } else null
+        return ViewQueryPage(ids = ids, queryId = response.string("id"), nextCursor = cursor)
     }
 
     /** Maps one property *value* object from a page into a [PropertyValue]. */
