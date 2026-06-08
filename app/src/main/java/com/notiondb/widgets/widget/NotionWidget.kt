@@ -55,8 +55,9 @@ class NotionWidget : GlanceAppWidget() {
     }
 }
 
+/** Widget body. Exposed (internal) so Glance unit tests can render it directly. */
 @Composable
-private fun WidgetRoot(
+internal fun WidgetRoot(
     appWidgetId: Int,
     connected: Boolean,
     config: WidgetConfig?,
