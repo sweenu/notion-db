@@ -82,6 +82,7 @@ dependencies {
 
     // Unit tests (JVM): JSON parsing, write-back shapes, Glance render
     testImplementation(libs.junit)
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.glance.appwidget.testing)
