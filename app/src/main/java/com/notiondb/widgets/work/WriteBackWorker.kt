@@ -69,7 +69,15 @@ class WriteBackWorker(
 
         return when (result) {
             is NotionResult.Success -> {
-                repo.clearPending(widgetId, pageId)
+                // For a view-based widget, re-query so the view's filter re-applies
+                // (e.g. an item just marked done drops out of a "not completed"
+                // view). For a whole-database widget there's no filter to re-apply,
+                // so just clear the pending flag and keep the optimistic value.
+                if (config.usesView) {
+                    repo.refresh(widgetId)
+                } else {
+                    repo.clearPending(widgetId, pageId)
+                }
                 NotionWidget().updateAll(applicationContext)
                 Result.success()
             }
