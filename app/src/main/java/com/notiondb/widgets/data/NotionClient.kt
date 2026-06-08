@@ -138,10 +138,26 @@ class NotionClient(
             is NotionResult.Success -> r.value
             is NotionResult.Failure -> return r
         }
-        return queryDataSource(
+
+        val full = queryDataSource(
             dataSourceId = view.dataSourceId,
             filter = view.filter,
             sorts = view.sorts,
+            startCursor = startCursor,
+            pageSize = pageSize,
+        )
+        // A view's saved sort can reference a property the query endpoint can't
+        // sort by (e.g. rollup/relation), which 400s. Rather than show an empty
+        // widget, retry without the sorts (keeping any filter). Genuine
+        // retryable failures (429/network) are returned as-is so the worker
+        // backs off instead of silently dropping the sort.
+        if (full is NotionResult.Success || (full is NotionResult.Failure && full.retryable)) {
+            return full
+        }
+        return queryDataSource(
+            dataSourceId = view.dataSourceId,
+            filter = view.filter,
+            sorts = emptyList(),
             startCursor = startCursor,
             pageSize = pageSize,
         )

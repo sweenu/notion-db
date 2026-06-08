@@ -3,9 +3,23 @@ package com.notiondb.widgets.widget
 import android.content.Context
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.action.ActionCallback
 import com.notiondb.widgets.App
+import com.notiondb.widgets.work.WidgetRefreshScheduler
 import com.notiondb.widgets.work.WidgetWriteScheduler
+
+/**
+ * Refreshes this widget on demand. Widgets can't be "pulled" to refresh, so the
+ * header/empty-state are tappable and route here, enqueueing an expedited
+ * refresh for this widget's id.
+ */
+class RefreshWidgetAction : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val widgetId = GlanceAppWidgetManager(context).getAppWidgetId(glanceId)
+        WidgetRefreshScheduler.refreshNow(context, widgetId)
+    }
+}
 
 /** Action parameter keys shared by the widget interactions. */
 object WidgetActionKeys {

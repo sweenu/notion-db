@@ -6,9 +6,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
@@ -66,6 +68,7 @@ internal fun WidgetRoot(
     val theme = config?.theme ?: WidgetTheme()
     val bg = ColorProvider(Color(theme.backgroundColor))
     val fg = ColorProvider(Color(theme.textColor))
+    val refresh = actionRunCallback<RefreshWidgetAction>()
 
     Column(
         modifier = GlanceModifier
@@ -78,11 +81,11 @@ internal fun WidgetRoot(
             !connected -> CenteredMessage("Open the app to connect Notion", fg)
             config == null -> CenteredMessage("Tap to configure this widget", fg)
             rows.isEmpty() -> {
-                Header(config, theme, fg)
-                CenteredMessage("No rows yet — pull to refresh", fg)
+                Header(config, theme, fg, refresh)
+                CenteredMessage("Loading… tap to refresh", fg, refresh)
             }
             else -> {
-                Header(config, theme, fg)
+                Header(config, theme, fg, refresh)
                 Spacer(GlanceModifier.height(8.dp))
                 RowList(config, rows, theme, fg)
             }
@@ -91,7 +94,7 @@ internal fun WidgetRoot(
 }
 
 @Composable
-private fun Header(config: WidgetConfig, theme: WidgetTheme, fg: ColorProvider) {
+private fun Header(config: WidgetConfig, theme: WidgetTheme, fg: ColorProvider, refresh: Action) {
     val label = config.viewName?.let { "${config.databaseTitle} · $it" } ?: config.databaseTitle
     Row(verticalAlignment = Alignment.CenterVertically, modifier = GlanceModifier.fillMaxWidth()) {
         Text(
@@ -101,6 +104,12 @@ private fun Header(config: WidgetConfig, theme: WidgetTheme, fg: ColorProvider) 
             modifier = GlanceModifier.defaultWeight(),
         )
         HeaderActions(config, theme)
+        Spacer(GlanceModifier.width(8.dp))
+        Text(
+            text = "↻",
+            style = TextStyle(color = fg, fontWeight = FontWeight.Bold),
+            modifier = GlanceModifier.clickable(refresh).padding(horizontal = 4.dp),
+        )
     }
 }
 
@@ -159,9 +168,10 @@ private fun RowList(
 }
 
 @Composable
-private fun CenteredMessage(text: String, fg: ColorProvider) {
+private fun CenteredMessage(text: String, fg: ColorProvider, onTap: Action? = null) {
+    val base = GlanceModifier.fillMaxSize()
     Box(
-        modifier = GlanceModifier.fillMaxSize(),
+        modifier = if (onTap != null) base.clickable(onTap) else base,
         contentAlignment = Alignment.Center,
     ) {
         Text(text = text, style = TextStyle(color = fg))
