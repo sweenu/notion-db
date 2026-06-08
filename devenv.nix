@@ -30,4 +30,19 @@
       "mips-android-sysimage-license"
     ];
   };
+
+  # `emu` — launch the emulator reliably on NixOS.
+  #
+  # The emulator bundles its own libc++, but devenv puts the SDK build-tools /
+  # NDK lib dirs on LD_LIBRARY_PATH (which Gradle needs), and those shadow it
+  # with an older libc++, crashing the emulator with a symbol-lookup error. We
+  # can't drop them globally without risking the build, so clear LD_LIBRARY_PATH
+  # for just the emulator and use the bundled software renderer.
+  #
+  # Usage: `emu` (windowed, AVD nd_test) · `emu -no-window` (headless) ·
+  #        `EMU_AVD=other emu`.
+  scripts.emu.exec = ''
+    exec env -u LD_LIBRARY_PATH emulator -avd "''${EMU_AVD:-nd_test}" \
+      -gpu swiftshader_indirect -no-snapshot -no-audio "$@"
+  '';
 }

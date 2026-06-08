@@ -21,15 +21,20 @@ devenv shell -- ./gradlew :app:testDebugUnitTest      # unit tests (JVM + Robole
 devenv shell -- ./gradlew :app:installDebug           # install to a running device/emulator
 ```
 
-Driving the headless emulator (what Claude uses to verify):
+Driving the emulator (what Claude uses to verify):
 
 ```sh
-emulator -avd nd_test -no-window -no-audio -no-snapshot -gpu swiftshader_indirect &
+emu &                # windowed; `emu -no-window` for headless (AVD: nd_test)
 adb wait-for-device
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb exec-out screencap -p > /tmp/s.png          # screenshot (then read it)
 adb exec-out run-as com.notiondb.widgets cat databases/notion_widgets.db > /tmp/nd.db  # inspect the Room cache (debug build)
 ```
+
+`emu` is a devenv script — it launches the emulator with `LD_LIBRARY_PATH`
+cleared, because devenv's SDK lib dirs (needed by Gradle) otherwise shadow the
+emulator's bundled libc++ and crash it with a symbol-lookup error. Don't call
+`emulator` directly on NixOS; use `emu`.
 
 devenv puts AVDs under `<repo>/.android` (`ANDROID_AVD_HOME`); the debug keystore
 lives there too, so build with the same env or reinstalls fail with a signature
