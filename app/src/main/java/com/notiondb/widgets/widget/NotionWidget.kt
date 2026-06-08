@@ -147,7 +147,10 @@ private fun RowList(
 ) {
     val verticalPad = if (theme.density == WidgetTheme.Density.COMPACT) 3.dp else 7.dp
     LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
-        items(rows, itemId = { it.pageId.hashCode().toLong() }) { row ->
+        // No stable itemId: the RemoteViews collection caches item views by id and
+        // won't re-render when only a row's content (e.g. checked) changes. Letting
+        // Glance key by position forces changed rows to redraw.
+        items(rows) { row ->
             Column(modifier = GlanceModifier.fillMaxWidth().padding(vertical = verticalPad)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -167,7 +170,8 @@ private fun RowList(
                         style = TextStyle(color = fg),
                         modifier = GlanceModifier.defaultWeight(),
                     )
-                    if (row.statusName != null) {
+                    // Don't repeat the status text when it's already a checkbox.
+                    if (row.statusName != null && !config.statusIsCheckbox) {
                         Spacer(GlanceModifier.width(8.dp))
                         Text(
                             text = row.statusName,

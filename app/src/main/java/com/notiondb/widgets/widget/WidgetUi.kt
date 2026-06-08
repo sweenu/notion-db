@@ -3,15 +3,19 @@ package com.notiondb.widgets.widget
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.action.Action
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
-import androidx.glance.appwidget.CheckBox
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
 import androidx.glance.layout.Box
+import androidx.glance.layout.padding
 import androidx.glance.layout.size
+import androidx.glance.text.Text
+import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.notiondb.widgets.model.WidgetConfig
 import com.notiondb.widgets.model.WidgetRow
@@ -19,33 +23,37 @@ import com.notiondb.widgets.model.WidgetTheme
 
 /**
  * Leading indicator for a row:
- *  - an interactive Glance [CheckBox] when a checkbox property is configured;
- *  - a tappable colored dot (advance Status) when a status property is set;
+ *  - a tappable checkbox glyph (☑/☐) when a checkbox or Status-as-checkbox is
+ *    configured — driven purely by our cached `checked` so it never desyncs
+ *    (a real RemoteViews CheckBox keeps its own toggle state in the launcher
+ *    and fights our optimistic update);
+ *  - a tappable colored dot (advance Status) when a plain status is set;
  *  - otherwise nothing.
- *
- * Both interactions go through [ToggleCheckboxAction] / [AdvanceStatusAction],
- * which update optimistically and enqueue the write-back.
  */
 @Composable
 fun RowLeading(config: WidgetConfig, row: WidgetRow, theme: WidgetTheme) {
+    val fg = ColorProvider(Color(theme.textColor))
+    val accent = ColorProvider(Color(theme.accentColor))
     when {
         // Status shown as a checkbox (the Notion-style toggle).
         config.statusIsCheckbox && row.checked != null ->
-            CheckBox(
+            CheckGlyph(
                 checked = row.checked,
-                onCheckedChange = actionRunCallback<ToggleStatusCheckboxAction>(
+                fg = fg,
+                accent = accent,
+                action = actionRunCallback<ToggleStatusCheckboxAction>(
                     rowParams(config.appWidgetId, row.pageId, config.statusProperty ?: ""),
                 ),
-                text = "",
             )
 
         config.checkboxProperty != null && row.checked != null ->
-            CheckBox(
+            CheckGlyph(
                 checked = row.checked,
-                onCheckedChange = actionRunCallback<ToggleCheckboxAction>(
+                fg = fg,
+                accent = accent,
+                action = actionRunCallback<ToggleCheckboxAction>(
                     rowParams(config.appWidgetId, row.pageId, config.checkboxProperty),
                 ),
-                text = "",
             )
 
         config.statusProperty != null ->
@@ -63,6 +71,16 @@ fun RowLeading(config: WidgetConfig, row: WidgetRow, theme: WidgetTheme) {
 
         else -> Box(modifier = GlanceModifier.size(0.dp)) {}
     }
+}
+
+/** A data-driven checkbox: appearance comes only from [checked], tap fires [action]. */
+@Composable
+private fun CheckGlyph(checked: Boolean, fg: ColorProvider, accent: ColorProvider, action: Action) {
+    Text(
+        text = if (checked) "☑" else "☐",
+        style = TextStyle(color = if (checked) accent else fg, fontSize = 18.sp),
+        modifier = GlanceModifier.padding(end = 2.dp).clickable(action),
+    )
 }
 
 private fun rowParams(widgetId: Int, pageId: String, property: String) =

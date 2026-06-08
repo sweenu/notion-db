@@ -6,7 +6,6 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.action.ActionCallback
 import com.notiondb.widgets.App
-import com.notiondb.widgets.work.WidgetRefreshScheduler
 import com.notiondb.widgets.work.WidgetWriteScheduler
 
 /**
@@ -17,7 +16,10 @@ import com.notiondb.widgets.work.WidgetWriteScheduler
 class RefreshWidgetAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val widgetId = GlanceAppWidgetManager(context).getAppWidgetId(glanceId)
-        WidgetRefreshScheduler.refreshNow(context, widgetId)
+        // Refresh inline (the callback can do network) so the tap is immediate,
+        // rather than waiting on a WorkManager job to be scheduled.
+        (context.applicationContext as App).container.repository.refresh(widgetId)
+        NotionWidget().update(context, glanceId)
     }
 }
 
