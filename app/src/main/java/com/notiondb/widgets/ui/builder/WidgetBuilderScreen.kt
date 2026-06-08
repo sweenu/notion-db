@@ -3,8 +3,6 @@ package com.notiondb.widgets.ui.builder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,7 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
@@ -48,7 +44,6 @@ import androidx.navigation.compose.rememberNavController
 import com.notiondb.widgets.data.PropertyType
 import com.notiondb.widgets.model.ButtonAction
 import com.notiondb.widgets.model.WidgetConfig
-import com.notiondb.widgets.model.WidgetTheme
 
 /**
  * Three-step builder: pick database → pick view → choose fields. A single
@@ -104,17 +99,6 @@ fun WidgetBuilderScreen(
                 draft = draft,
                 onAdd = vm::addAction,
                 onRemove = vm::removeAction,
-                onNext = { nav.navigate("style") },
-            )
-        }
-        composable("style") {
-            StyleStep(
-                draft = draft,
-                onBackground = vm::setBackgroundColor,
-                onAccent = vm::setAccentColor,
-                onDensity = vm::setDensity,
-                onMaxRows = vm::setMaxRows,
-                onHideChecked = vm::setHideChecked,
                 onSave = { vm.save(onSaved) },
             )
         }
@@ -252,10 +236,10 @@ private fun ActionsStep(
     draft: BuilderDraft,
     onAdd: (ButtonAction) -> Unit,
     onRemove: (Int) -> Unit,
-    onNext: () -> Unit,
+    onSave: () -> Unit,
 ) {
     var webhookUrl by remember { mutableStateOf("") }
-    StepScaffold(title = "Buttons (optional)", draft = draft, action = "Next: style" to onNext) {
+    StepScaffold(title = "Buttons (optional)", draft = draft, action = "Save widget" to onSave) {
         Text(
             "Notion's Button field can't be triggered through the API, so add app " +
                 "buttons that perform the same actions.",
@@ -305,66 +289,6 @@ private fun ActionsStep(
             },
             modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         ) { Text("Add webhook button") }
-    }
-}
-
-private val BACKGROUND_SWATCHES = listOf(0xFF111111L, 0xFFFFFFFFL, 0xFF1E1E2EL, 0xFF14532DL, 0xFF1E3A8AL)
-private val ACCENT_SWATCHES = listOf(0xFF2EAADCL, 0xFFE03E3EL, 0xFF0F7B6CL, 0xFFD9730DL, 0xFF6940A5L)
-
-@Composable
-private fun StyleStep(
-    draft: BuilderDraft,
-    onBackground: (Long) -> Unit,
-    onAccent: (Long) -> Unit,
-    onDensity: (WidgetTheme.Density) -> Unit,
-    onMaxRows: (Int) -> Unit,
-    onHideChecked: (Boolean) -> Unit,
-    onSave: () -> Unit,
-) {
-    StepScaffold(title = "Style", draft = draft, action = "Save widget" to onSave) {
-        Text("Background", style = MaterialTheme.typography.labelLarge)
-        SwatchRow(BACKGROUND_SWATCHES, draft.theme.backgroundColor, onBackground)
-
-        Text("Accent", style = MaterialTheme.typography.labelLarge)
-        SwatchRow(ACCENT_SWATCHES, draft.theme.accentColor, onAccent)
-
-        Text("Density", style = MaterialTheme.typography.labelLarge)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            WidgetTheme.Density.entries.forEach { d ->
-                FilterChip(
-                    selected = draft.theme.density == d,
-                    onClick = { onDensity(d) },
-                    label = { Text(d.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                )
-            }
-        }
-
-        Text("Rows to show: ${draft.maxRows}", style = MaterialTheme.typography.labelLarge)
-        Slider(
-            value = draft.maxRows.toFloat(),
-            onValueChange = { onMaxRows(it.toInt()) },
-            valueRange = 1f..50f,
-        )
-
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text("Hide completed rows", modifier = Modifier.weight(1f))
-            Switch(checked = draft.hideCheckedRows, onCheckedChange = onHideChecked)
-        }
-    }
-}
-
-@Composable
-private fun SwatchRow(colors: List<Long>, selected: Long, onPick: (Long) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(vertical = 4.dp)) {
-        colors.forEach { argb ->
-            Box(
-                modifier = Modifier
-                    .size(if (argb == selected) 36.dp else 30.dp)
-                    .clip(CircleShape)
-                    .background(Color(argb))
-                    .clickable { onPick(argb) },
-            )
-        }
     }
 }
 
